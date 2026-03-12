@@ -1,47 +1,36 @@
-import pytesseract
-from PIL import Image
 from langchain.schema import Document
-import os
-import shutil
+import gc
+from rapidocr_onnxruntime import RapidOCR
+from threading import Lock
+ocr_lock = Lock()
+
+ocr = RapidOCR(
+    det_model_path=None,  # Auto-download (~2.5MB)
+    rec_model_path=None,  # Auto-download (~10MB)
+    cls_model_path=None,  # Set to None to disable
+    use_angle_cls=False,  # Disable for less memory
+    box_thresh=0.6,       # Higher = fewer detections
+    unclip_ratio=1.5,text_score=0.5,use_det=True,
+    use_cls=False,        # Saves significant memory
+    use_rec=True,device='cpu',         # Force CPU for consistent memory
+    print_verbose=False   # Disable logs in production
+)
 
 
-def find_tesseract_executable():
-    """
-    Check if Tesseract is installed and set its path.
-    Returns True if found, otherwise raises an exception.
-    """
-    tesseract_path = shutil.which("tesseract")
-    if tesseract_path:
-        pytesseract.pytesseract.tesseract_cmd = tesseract_path
-        return True
+def load_image_document(image_file):
+    try:
+        img_info = []
+        with ocr_lock:
+            result, _ = ocr(image_file)
+            for item in result:
+                text = item[1] 
+                img_info.append(text)
 
-    tesseract_env_path = os.getenv("TESSERACT_PATH")
-    if tesseract_env_path and os.path.exists(tesseract_env_path):
-        pytesseract.pytesseract.tesseract_cmd = tesseract_env_path
-        return True
+        print(f"Extracted text from {image_file} using Rapid OCR: {img_info}")
+        doc = Document(page_content="\n".join(img_info),metadata={"source": image_file})    
+        gc.collect()
+        return [doc]
 
-    common_paths = [
-        os.path.expanduser("~\\AppData\\Local\\Programs\\Tesseract-OCR\\tesseract.exe"),  # Typical Windows path
-        "/usr/local/lib/python3.10/dist-packages/pytesseract/tesseract.exe",  # Google Colab path
-        "/usr/bin/tesseract",  # Common Linux path
-    ]
-    for path in common_paths:
-        if os.path.exists(path):
-            pytesseract.pytesseract.tesseract_cmd = path
-            return True
-
-    raise FileNotFoundError("Tesseract executable not found. Please install Tesseract OCR or set TESSERACT_PATH environment variable.")
-
-
-def load_image_document(image_path):
-
-    img = Image.open(image_path)
-    if find_tesseract_executable():
-        text = pytesseract.image_to_string(img)
-
-    doc = Document(
-        page_content=text,
-        metadata={"source": image_path}
-    )
-
-    return [doc]
+    except Exception as e:
+        print(f"Error while procesing Rapid ocr file :: {e}")
+        return []

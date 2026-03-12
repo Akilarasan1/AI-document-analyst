@@ -2,16 +2,19 @@ from langchain.agents import create_react_agent, AgentExecutor
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain import hub
-
-
 from tools import search_documents
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+api_key = os.environ["OPENROUTER_API_KEY"]
 
 def create_document_agent():
 
     llm = ChatOpenAI(
         model="openrouter/free",
         base_url="https://openrouter.ai/api/v1",
-        api_key="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"
+        api_key=api_key
     )
     tools = [search_documents]
 
