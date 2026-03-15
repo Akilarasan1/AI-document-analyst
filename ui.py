@@ -6,31 +6,33 @@ from agent import ingest_documents
 
 st.title("AI Document Analyst")
 
-# Upload section
 uploaded_file = st.file_uploader(
     "Upload a document",type=["png", "jpg", "jpeg"])
 
-if uploaded_file:
+if uploaded_file and not st.session_state.processed:
+
     st.success("File uploaded")
 
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(uploaded_file.read())
         file_path = tmp.name
 
-    # OCR extraction
     docs = load_image_document(file_path)
-    # print(docs)
 
     ingest_documents(docs)
 
+    st.session_state.processed = True
+
     st.success("Document processed and stored")
 
+
 st.divider()
+with st.form("question_form"):
 
-question = st.text_input("Ask a question about the document")
+    question = st.text_input("Ask a question about the document")
 
-if st.button("Ask"):
+    submitted = st.form_submit_button("Ask")
 
-    answer = ask_question(question)
-
-    st.write(answer)
+    if submitted:
+        answer = ask_question(question)
+        st.write(answer)
