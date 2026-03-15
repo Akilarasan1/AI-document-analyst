@@ -2,7 +2,7 @@ import streamlit as st
 import tempfile
 from app import ask_question
 from ocr_loader import load_image_document
-from rag_pipeline import ingest_documents
+from agent import ingest_documents
 
 st.title("AI Document Analyst")
 
@@ -19,16 +19,14 @@ if uploaded_file:
 
     # OCR extraction
     docs = load_image_document(file_path)
-    print(docs)
+    # print(docs)
 
-    # Store in vector DB
     ingest_documents(docs)
 
     st.success("Document processed and stored")
 
 st.divider()
 
-# Question section
 question = st.text_input("Ask a question about the document")
 
 if st.button("Ask"):
