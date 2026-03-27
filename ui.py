@@ -16,9 +16,12 @@ if "last_file" not in st.session_state:
 uploaded_file = st.file_uploader("Upload a document", type=["png", "jpg", "jpeg"])
 
 if uploaded_file and uploaded_file.name != st.session_state.last_file:
+    
+    # 🚨 Step 1: Reset everything BEFORE doing anything
+    st.session_state.pop("vectordb", None)
     st.session_state.processed = False
     st.session_state.last_file = uploaded_file.name
-    
+
     st.success("File uploaded")
 
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
@@ -27,8 +30,11 @@ if uploaded_file and uploaded_file.name != st.session_state.last_file:
 
     docs = load_image_document(file_path)
 
-    ingest_documents(docs)
+    # 🚨 Step 2: Fresh ingestion
+    vectordb = ingest_documents(docs, reset_db=True)
 
+    # ✅ Step 3: Store clean state
+    st.session_state["vectordb"] = vectordb
     st.session_state.processed = True
 
     st.success("Document processed and stored")
@@ -36,11 +42,9 @@ if uploaded_file and uploaded_file.name != st.session_state.last_file:
 st.divider()
 
 with st.form("question_form"):
-
     question = st.text_input("Ask a question about the document")
-
     submitted = st.form_submit_button("Ask")
-
     if submitted:
         answer = ask_question(question)
         st.write(answer)
+

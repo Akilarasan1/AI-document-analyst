@@ -13,71 +13,51 @@ os.environ["ANONYMIZED_TELEMETRY"] = "False"
 from langchain_chroma import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from chromadb.config import Settings
-import chromadb
-
-client = chromadb.Client(
-    Settings(anonymized_telemetry=False)
-)
-
-# api_key = os.environ["OPENROUTER_API_KEY"]
-
-# def create_document_agent():
-
-#     llm = ChatOpenAI(
-#         model="openrouter/free",
-#         base_url="https://openrouter.ai/api/v1",
-#         api_key=api_key
-#     )
-#     tools = [search_documents]
+import chromadb, shutil, streamlit as st
 
 
-def ingest_documents(docs):
+def get_client():
+    # return chromadb.PersistentClient(path="./chroma_db")
+    return chromadb.Client()
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=100
-    )
 
+def ingest_documents(docs, reset_db=False):
+
+    if reset_db:
+        if "vectordb" in st.session_state:
+            del st.session_state["vectordb"]
+        shutil.rmtree("./chroma_db", ignore_errors=True)
+
+    client = get_client()
+
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500,chunk_overlap=100)
     chunks = splitter.split_documents(docs)
-
-    vectordb = get_vector_store()
-
-    # ✅ Delete the entire collection safely
-    vectordb.delete_collection()
-
-    # recreate the vector store
-    vectordb = get_vector_store()
-
+    vectordb = get_vector_store(client)
     vectordb.add_documents(chunks)
-
-
-def get_embedding_model():
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
-    return embeddings
-
-
-def get_vector_store():
-    embeddings = get_embedding_model()
-
-    vectordb = Chroma(
-        collection_name="documents",
-        embedding_function=embeddings,
-        persist_directory="./chroma_db"
-    )
-
     return vectordb
 
 
-def get_retriever():
-    vectordb = get_vector_store()
-    # retriever = vectordb.as_retriever(search_kwargs={"k":3})
-    retriever = vectordb.as_retriever(
-    search_type="similarity",
-    search_kwargs={"k":3})
+def get_embedding_model():
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    return embeddings
 
-    return retriever
+
+def get_vector_store(client):
+    embeddings = get_embedding_model()
+
+    return Chroma(
+        client=client,
+        collection_name="docs",
+        embedding_function=embeddings,persist_directory="./chroma_db"
+
+    )
+
+
+def get_retriever():
+    vectordb = st.session_state.get("vectordb", None)
+    if vectordb is None:
+        return None
+    return vectordb.as_retriever(search_kwargs={"k": 3})
 
 
 @tool
@@ -89,27 +69,3 @@ def search_documents(query: str):
     return "\n\n".join(doc.page_content[:500] for doc in docs)
 
 
-
-# api_key = os.environ["OLLAMA_API_KEY"]
-
-# def create_document_agent():
-#     llm = ChatOllama(
-#     model="phi3",
-#     base_url="http://localhost:11434",
-#     temperature=0)
-
-#     tools = [search_documents]
-
-#     prompt = hub.pull("hwchase17/react")
-
-#     agent = create_react_agent(llm, tools, prompt)
-
-#     agent_executor = AgentExecutor(
-#     agent=agent,
-#     tools=tools,
-#     verbose=True,
-#     handle_parsing_errors=True,
-#     max_iterations=3)
-
-
-#     return agent_executor
