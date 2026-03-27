@@ -11,3 +11,4 @@ streamlit
 pillow
 pytesseract
 python-dotenv
+"posthog>=2.4.0,<6.0.0"

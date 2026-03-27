@@ -6,11 +6,19 @@ from agent import ingest_documents
 
 st.title("AI Document Analyst")
 
-uploaded_file = st.file_uploader(
-    "Upload a document",type=["png", "jpg", "jpeg"])
+if "processed" not in st.session_state:
+    st.session_state.processed = False
 
-if uploaded_file and not st.session_state.processed:
+if "last_file" not in st.session_state:
+    st.session_state.last_file = None
 
+
+uploaded_file = st.file_uploader("Upload a document", type=["png", "jpg", "jpeg"])
+
+if uploaded_file and uploaded_file.name != st.session_state.last_file:
+    st.session_state.processed = False
+    st.session_state.last_file = uploaded_file.name
+    
     st.success("File uploaded")
 
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
@@ -25,8 +33,8 @@ if uploaded_file and not st.session_state.processed:
 
     st.success("Document processed and stored")
 
-
 st.divider()
+
 with st.form("question_form"):
 
     question = st.text_input("Ask a question about the document")

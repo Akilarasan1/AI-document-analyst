@@ -1,17 +1,24 @@
-from agent import create_document_agent
-
-# llm = create_document_agent()
+import os
+from langchain_openai import ChatOpenAI
+from agent import search_documents
 from langchain_community.chat_models import ChatOllama
-
-
 from agent import get_vector_store
 
-llm = ChatOllama(
-    model="phi3",
-    base_url="http://localhost:11434",
-    temperature=0
-)
+# llm = ChatOllama(
+#     model="phi3",
+#     base_url="http://localhost:11434",
+#     temperature=0
+# )
 
+
+api_key = os.environ["OPENROUTER_API_KEY"]
+
+
+llm = ChatOpenAI(
+    model="openrouter/free",
+    base_url="https://openrouter.ai/api/v1",
+    api_key=api_key
+)
 
 
 

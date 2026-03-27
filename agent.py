@@ -8,10 +8,16 @@ load_dotenv()
 from langchain_community.chat_models import ChatOllama
 from langchain_core.tools import tool
 from langchain_huggingface import HuggingFaceEmbeddings
+import os
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
 from langchain_chroma import Chroma
-
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from chromadb.config import Settings
+import chromadb
 
+client = chromadb.Client(
+    Settings(anonymized_telemetry=False)
+)
 
 # api_key = os.environ["OPENROUTER_API_KEY"]
 
@@ -29,14 +35,20 @@ def ingest_documents(docs):
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
-        chunk_overlap=100)
+        chunk_overlap=100
+    )
 
     chunks = splitter.split_documents(docs)
 
     vectordb = get_vector_store()
 
-    vectordb.add_documents(chunks)
+    # ✅ Delete the entire collection safely
+    vectordb.delete_collection()
 
+    # recreate the vector store
+    vectordb = get_vector_store()
+
+    vectordb.add_documents(chunks)
 
 
 def get_embedding_model():
@@ -78,26 +90,26 @@ def search_documents(query: str):
 
 
 
-api_key = os.environ["OLLAMA_API_KEY"]
+# api_key = os.environ["OLLAMA_API_KEY"]
 
-def create_document_agent():
-    llm = ChatOllama(
-    model="phi3",
-    base_url="http://localhost:11434",
-    temperature=0)
+# def create_document_agent():
+#     llm = ChatOllama(
+#     model="phi3",
+#     base_url="http://localhost:11434",
+#     temperature=0)
 
-    tools = [search_documents]
+#     tools = [search_documents]
 
-    prompt = hub.pull("hwchase17/react")
+#     prompt = hub.pull("hwchase17/react")
 
-    agent = create_react_agent(llm, tools, prompt)
+#     agent = create_react_agent(llm, tools, prompt)
 
-    agent_executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    verbose=True,
-    handle_parsing_errors=True,
-    max_iterations=3)
+#     agent_executor = AgentExecutor(
+#     agent=agent,
+#     tools=tools,
+#     verbose=True,
+#     handle_parsing_errors=True,
+#     max_iterations=3)
 
 
-    return agent_executor
+#     return agent_executor
