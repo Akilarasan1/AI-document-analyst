@@ -3,6 +3,7 @@ import tempfile
 from app import ask_question
 from ocr_loader import load_image_document
 from agent import ingest_documents
+import threading
 
 st.title("AI Document Analyst")
 
@@ -15,9 +16,9 @@ if "last_file" not in st.session_state:
 
 uploaded_file = st.file_uploader("Upload a document", type=["png", "jpg", "jpeg"])
 
-if uploaded_file and uploaded_file.name != st.session_state.last_file:
-    
-    # 🚨 Step 1: Reset everything BEFORE doing anything
+if uploaded_file and uploaded_file.name != st.session_state.get("last_file"):
+
+    # 🚨 Reset state
     st.session_state.pop("vectordb", None)
     st.session_state.processed = False
     st.session_state.last_file = uploaded_file.name
@@ -29,22 +30,34 @@ if uploaded_file and uploaded_file.name != st.session_state.last_file:
         file_path = tmp.name
 
     docs = load_image_document(file_path)
+    st.session_state["docs"] = docs
 
-    # 🚨 Step 2: Fresh ingestion
-    vectordb = ingest_documents(docs, reset_db=True)
-
-    # ✅ Step 3: Store clean state
-    st.session_state["vectordb"] = vectordb
-    st.session_state.processed = True
-
-    st.success("Document processed and stored")
+    st.success("Document loaded successfully (ready for questions)")
 
 st.divider()
 
-with st.form("question_form"):
-    question = st.text_input("Ask a question about the document")
-    submitted = st.form_submit_button("Ask")
-    if submitted:
-        answer = ask_question(question)
-        st.write(answer)
+#  SHOW ASK FORM ONLY IF DOCS EXIST
+if "docs" in st.session_state:
+    with st.form("question_form"):
+        question = st.text_input("Ask a question about the document")
+        submitted = st.form_submit_button("Ask")
 
+        if submitted:
+            docs = st.session_state.get("docs")
+            answer = ask_question(question, docs=docs)
+            st.write(answer)
+            print("Output came out......!")
+
+else:
+    st.info("📄 Please upload a document to start asking questions.")
+
+
+docs = st.session_state.get("docs", None)
+
+if docs and "vectordb" not in st.session_state:
+    with st.spinner("Optimizing document for faster search..."):
+        vectordb = ingest_documents(docs, reset_db=True)
+        st.session_state["vectordb"] = vectordb
+        st.session_state.processed = True
+
+# "posthog>=2.4.0,<6.0.0"

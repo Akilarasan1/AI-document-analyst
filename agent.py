@@ -1,18 +1,13 @@
-from langchain.agents import create_react_agent, AgentExecutor
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-from langchain import hub
 from dotenv import load_dotenv
 import os
 load_dotenv()
-from langchain_community.chat_models import ChatOllama
 from langchain_core.tools import tool
 from langchain_huggingface import HuggingFaceEmbeddings
 import os
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
 from langchain_chroma import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from chromadb.config import Settings
+# from chromadb.config import Settings
 import chromadb, shutil, streamlit as st
 
 
@@ -44,13 +39,10 @@ def get_embedding_model():
 
 def get_vector_store(client):
     embeddings = get_embedding_model()
-
     return Chroma(
         client=client,
         collection_name="docs",
-        embedding_function=embeddings,persist_directory="./chroma_db"
-
-    )
+        embedding_function=embeddings,persist_directory="./chroma_db")
 
 
 def get_retriever():
