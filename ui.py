@@ -36,7 +36,6 @@ if uploaded_file and uploaded_file.name != st.session_state.get("last_file"):
 
 st.divider()
 
-#  SHOW ASK FORM ONLY IF DOCS EXIST
 if "docs" in st.session_state:
     with st.form("question_form"):
         question = st.text_input("Ask a question about the document")
@@ -44,17 +43,19 @@ if "docs" in st.session_state:
 
         if submitted:
             docs = st.session_state.get("docs")
-            answer = ask_question(question, docs=docs)
-            st.write(answer)
-            print("Output came out......!")
+            vectordb = st.session_state.get("vectordb")
 
+            if vectordb:
+                answer = ask_question(question)  # use DB
+            else:
+                answer = ask_question(question, docs=docs)  # fallback
+            st.write(answer)
 else:
     st.info("📄 Please upload a document to start asking questions.")
 
 
 docs = st.session_state.get("docs", None)
-
-if docs and "vectordb" not in st.session_state:
+if docs and "vectordb" not in st.session_state and submitted:
     with st.spinner("Optimizing document for faster search..."):
         vectordb = ingest_documents(docs, reset_db=True)
         st.session_state["vectordb"] = vectordb

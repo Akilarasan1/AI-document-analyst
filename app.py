@@ -19,16 +19,19 @@ def ask_question(question, docs=None):
     if docs:
         context = "\n\n".join(doc.page_content for doc in docs)
     else:
-        vectordb = get_vector_store()
-        retriever = vectordb.as_retriever(search_kwargs={"k": 3})
+        print("Using vector DB...")
+        vectordb = st.session_state.get("vectordb")
+        retriever = vectordb.as_retriever(search_kwargs={"k": 5})
         retrieved_docs = retriever.invoke(question)
         context = "\n\n".join(doc.page_content for doc in retrieved_docs)
 
     prompt = f"""
     You are an AI document analyst.
-    STRICT RULES:
-    - Answer ONLY from the provided context
-    - If answer is not found, say "Not found in document"
+    RULES:
+    - Answer ONLY from the context
+    - If partially available, answer what you can
+    - Say "Not found in document" only if completely missing
+
 
     Context:
     {context}
