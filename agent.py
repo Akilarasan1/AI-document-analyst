@@ -1,12 +1,6 @@
-from langchain.agents import create_react_agent, AgentExecutor
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-from langchain import hub
 from dotenv import load_dotenv
 import os
 load_dotenv()
-from langchain_community.chat_models import ChatOllama
-from langchain_core.tools import tool
 from langchain_huggingface import HuggingFaceEmbeddings
 import os
 os.environ["ANONYMIZED_TELEMETRY"] = "False"
@@ -60,12 +54,6 @@ def get_retriever():
     return vectordb.as_retriever(search_kwargs={"k": 3})
 
 
-@tool
-def search_documents(query: str):
-    """Search the uploaded document text to answer user questions."""
-    retriever = get_retriever()
-    docs = retriever.invoke(query)
 
-    return "\n\n".join(doc.page_content[:500] for doc in docs)
 
 

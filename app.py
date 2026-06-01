@@ -16,15 +16,19 @@ else:
 
 
 def ask_question(question):
-    vectordb = st.session_state.get("vectordb", None)
-    if vectordb is None:
-        return "Please upload and process a document first."
+    try:
+        vectordb = st.session_state.get("vectordb", None)
+        if vectordb is None:
+            return "Please upload and process a document first."
 
-    retriever = vectordb.as_retriever(search_kwargs={"k": 3})
-    docs = retriever.invoke(question)
+        retriever = vectordb.as_retriever(search_kwargs={"k": 3})
+        docs = retriever.invoke(question)
+        
+        if not docs:
+            return "No relevant content found in the document."
 
-    context = "\n\n".join(doc.page_content for doc in docs)
-    prompt = f"""
+        context = "\n\n".join(doc.page_content for doc in docs)
+        prompt = f"""
                 You are an AI document analyst.
 
                 STRICT RULES:
@@ -39,21 +43,9 @@ def ask_question(question):
 
                 Answer:"""
 
-    response = llm.invoke(prompt)
-    return response.content
+        response = llm.invoke(prompt)
+        return response.content
+    
+    except Exception as e:
+        return f"Error processing question: {str(e)}"
 
-# def ask_question(question):
-#     vectordb = get_vector_store()
-#     retriever = vectordb.as_retriever(search_kwargs={"k":3})
-#     docs = retriever.invoke(question)
-#     context = "\n\n".join(doc.page_content for doc in docs)
-
-#     prompt = f"""You are an AI document analyst.
-#         Use the context below to answer the question.
-#         Context:{context}
-#         Question:{question}
-#         Answer clearly based only on the document.
-#         """
-
-#     response = llm.invoke(prompt)
-#     return response.content
